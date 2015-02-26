@@ -219,7 +219,7 @@ function gitPush(req, res) {
         }
         else
         {
-            child_process.exec("git commit -a ", function(err, stdout, stderr) {
+            child_process.exec("git commit -a -m 'update via Nudge'", function(err, stdout, stderr) {
                 if (err) {
                     writeHeading(res, "h2", "Error committing");
                     writePre(res, "error", stderr);
