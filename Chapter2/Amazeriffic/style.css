@@ -1,0 +1,25 @@
+
+h2{
+  font-size: 30px;
+}
+
+ul.questions{
+  margin-left: 50px;
+}
+
+li{
+  color: red;
+}
+
+li:nth-child(5){
+  color: green;
+}
+
+/**
+*  Using blue to match the color, although it may
+*  be a poor choice. Users might mistake it for a
+*  link.
+*/
+.blue{
+  color: blue;
+}
