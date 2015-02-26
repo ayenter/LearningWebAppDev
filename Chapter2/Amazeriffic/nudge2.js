@@ -57,6 +57,8 @@ function beginForm(res) {
 }
 
 function endForm(res) {
+    res.write("<input type='submit' value='Add All Files'>\n");
+    res.write("<input type='submit' value='Commit'>\n");
     res.write("<input type='submit' value='Push'>\n");
     res.write("</form>\n");
     res.write("</div>\n");
@@ -114,8 +116,6 @@ function gitBranch(res) {
         } else {
             var output = stdout.toString(),
                 branches = output.split(/\n/);
-            res.write("<div class='row'>\n");
-            beginForm(res);
             res.write("<div class='col-sm-4'>\n");
             beginSelect(res, "branch");
             branches.forEach(function(branch) {
@@ -133,6 +133,27 @@ function gitBranch(res) {
     });
 }
 
+function gitOption(res) {
+    var output = "add commit push";
+    var output = output.toString(),
+        options = output.split(" ");
+    res.write("<div class='row'>\n");
+    beginForm(res);
+    res.write("<div class='col-sm-4'>\n");
+    beginSelect(res, "option");
+    options.forEach(function(option) {
+        var optionName = option.replace(/^\s*\*?\s*/, "").
+                                replace(/\s*$/, "");
+
+        if (optionName) {
+            writeOption(res, optionName);
+        }
+    });
+    endSelect(res);
+    res.write("</div>\n");
+    gitRemote(res);
+}
+
 function gitStatus(res) {
     child_process.exec("git status", function(err, stdout, stderr) {
         if (err) {
@@ -142,7 +163,7 @@ function gitStatus(res) {
         } else {
             writeHeading(res, "h2", "Git Status");
             writePre(res, "status", stdout);
-            gitBranch(res);
+            gitOption(res);
         }
     });
 }
@@ -156,24 +177,66 @@ function gitPush(req, res) {
 
     req.on("end", function () {
         var form = querystring.parse(body);
-
-        child_process.exec("git push " + form.remote + " " + form.branch, function(err, stdout, stderr) {
-            if (err) {
-                writeHeading(res, "h2", "Error pushing repository");
-                writePre(res, "error", stderr);
-            } else {
-                writeHeading(res, "h2", "Git Push");
-                if (stdout=="")
-                {
-                    writePre(res, "push", "Nothing done.");
+        if (form.option === "push")
+        {
+            child_process.exec("git push " + form.remote + " " + form.branch, function(err, stdout, stderr) {
+                if (err) {
+                    writeHeading(res, "h2", "Error pushing repository");
+                    writePre(res, "error", stderr);
+                } else {
+                    writeHeading(res, "h2", "Git Push");
+                    if (stdout==="")
+                    {
+                        writePre(res, "push", "git push " + form.remote + " " + form.branch);
+                    }
+                    else
+                    {
+                        writePre(res, "push", stdout);
+                    }
                 }
-                else
-                {
-                    writePre(res, "push", stdout);
+                gitStatus(res);
+            });
+        }
+        else if (form.option === "add")
+        {
+            child_process.exec("git add . ", function(err, stdout, stderr) {
+                if (err) {
+                    writeHeading(res, "h2", "Error adding");
+                    writePre(res, "error", stderr);
+                } else {
+                    writeHeading(res, "h2", "Git Add");
+                    if (stdout==="")
+                    {
+                        writePre(res, "push", "Done.");
+                    }
+                    else
+                    {
+                        writePre(res, "push", stdout);
+                    }
                 }
-            }
-            gitStatus(res);
-        });
+                gitStatus(res);
+            });
+        }
+        else
+        {
+            child_process.exec("git commit -a ", function(err, stdout, stderr) {
+                if (err) {
+                    writeHeading(res, "h2", "Error committing");
+                    writePre(res, "error", stderr);
+                } else {
+                    writeHeading(res, "h2", "Git Commit");
+                    if (stdout==="")
+                    {
+                        writePre(res, "push", "Done.");
+                    }
+                    else
+                    {
+                        writePre(res, "push", stdout);
+                    }
+                }
+                gitStatus(res);
+            });
+        }
     });
 }
 
@@ -192,9 +255,11 @@ function frontPage(req, res) {
         writeHeading(res, "h1", title);
         res.write("</div>\n");
 
-        if (req.method === "POST" && req.url === "/push") {
+        if (req.method === "POST" && req.url === "/push")
+        {
             gitPush(req, res);
-        } else {
+        }
+        else {
             gitStatus(res);
         }
     }
